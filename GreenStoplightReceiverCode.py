@@ -31,46 +31,55 @@ RESET = digitalio.DigitalInOut(board.RFM_RST)
 # Initialise RFM95 radio
 rfm95 = adafruit_rfm9x.RFM9x(board.SPI(), CS, RESET, RADIO_FREQ_MHZ)
 
+def red():
+    pixel.fill((255, 0, 0))
+    red_relay.value = True
+    yellow_relay.value = False
+    green_relay.value = False
+    print("RED!")
+
+def yellow():
+    pixel.fill((255, 255, 0))
+    red_relay.value = False
+    green_relay.value = False
+    yellow_relay.value = True
+    print("YELLOW!")
+
+def green():
+    pixel.fill((0, 255, 0))
+    red_relay.value = False
+    yellow_relay.value = False
+    green_relay.value = True
+    print("GREEN!")
+
+def blue():
+    pixel.fill((0, 0, 255))
+    red_relay.value = True
+    yellow_relay.value = True
+    green_relay.value = True
+    print("BLUE!")
+
+switch = {
+    b'R': red,
+    b'Y': yellow,
+    b'G': green,
+    b'B': blue,
+    b'O': blue,
+}
+
 # Wait to receive packets.
 print("Waiting for packets...")
 while True:
     # Look for a new packet - wait up to 5 seconds:
     packet = rfm95.receive(timeout=5.0)
     # If no packet was received during the timeout then None is returned.
-    if packet is not None:
-        print("Received a packet! Changing color!")
-        # If the received packet is b'red'...
-        if packet == b'R':
-            # set NeoPixel LED color to red.
-            pixel.fill((255, 0, 0))
-            # turn on the RED Relay and the others off
-            yellow_relay.value = False
-            green_relay.value = False
-            red_relay.value = True
-            print("RED!")
-        elif packet == b'Y':
-            pixel.fill((255, 255, 0))
-            red_relay.value = False
-            green_relay.value = False
-            yellow_relay.value = True
-            print("YELLOW!")
-        elif packet == b'G':
-            pixel.fill((0, 255, 0))
-            red_relay.value = False
-            yellow_relay.value = False
-            green_relay.value = True
-            print("GREEN!")
-        elif packet == b'B':
-            pixel.fill((0, 0, 255))
-            red_relay.value = True
-            yellow_relay.value = True
-            green_relay.value = True
-            print("BLUE!")
-         elif packet == b'O':
-            pixel.fill((0, 0, 255))
-            red_relay.value = False
-            yellow_relay.value = False
-            green_relay.value = False
-            print("BLUE!")           
-        else:
-            print("No packets")
+    if packet is None:
+        continue
+
+    print("Received a packet! Changing color!")
+
+    f = switch.get(packet)
+    if f is not None:
+        f()
+    else:
+        print("Unknown packet: ", packet)
